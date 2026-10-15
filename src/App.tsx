@@ -2,17 +2,29 @@ import React from 'react';
 import { ClinicProvider, useClinic } from './context/ClinicContext';
 import { PublicWebsite } from './components/PublicWebsite';
 import { AdminCMS } from './components/AdminCMS';
-import { Globe, Settings2 } from 'lucide-react';
+import { AuthModal } from './components/AuthModal';
+import { Globe, Settings2, Lock, ShieldCheck } from 'lucide-react';
 
 const AppContent: React.FC = () => {
-  const { activeView, setActiveView } = useClinic();
+  const { activeView, setActiveView, isAuthenticated, openAuthModal } = useClinic();
+
+  const handleCMSClick = () => {
+    if (!isAuthenticated) {
+      openAuthModal();
+    } else {
+      setActiveView('cms');
+    }
+  };
 
   return (
     <div className="relative min-h-screen">
       {/* Active Screen */}
       {activeView === 'website' ? <PublicWebsite /> : <AdminCMS />}
 
-      {/* Floating Global Screen Switcher (Quick Toggle for evaluation) */}
+      {/* Security Auth Modal for Dra. Vilenis */}
+      <AuthModal />
+
+      {/* Floating Global Screen Switcher */}
       <div className="fixed bottom-4 left-4 z-50">
         <div className="bg-[#00341f]/95 backdrop-blur-md text-white p-1 rounded-full shadow-2xl flex items-center border border-[#97f3b5]/40 text-xs">
           <button
@@ -30,15 +42,24 @@ const AppContent: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => setActiveView('cms')}
+            onClick={handleCMSClick}
             className={`px-3 py-1.5 rounded-full font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
               activeView === 'cms'
                 ? 'bg-[#97f3b5] text-[#00341f] shadow-sm'
                 : 'text-white/80 hover:text-white'
             }`}
+            title={
+              isAuthenticated
+                ? 'Gestor de Contenidos (Sesión iniciada)'
+                : 'Acceso privado exclusivo para la Dra. Vilenis'
+            }
           >
-            <Settings2 className="w-3.5 h-3.5" />
-            <span>Panel CMS Admin</span>
+            {isAuthenticated ? (
+              <ShieldCheck className="w-3.5 h-3.5 text-[#9af6b8]" />
+            ) : (
+              <Lock className="w-3.5 h-3.5 text-[#edbf7a]" />
+            )}
+            <span>{isAuthenticated ? 'Panel CMS (Dra. Vilenis)' : 'Acceso Propietaria (CMS)'}</span>
           </button>
         </div>
       </div>

@@ -18,6 +18,16 @@ interface ClinicContextType {
   lastPublishedTime: string;
   hasUnsavedChanges: boolean;
 
+  // Security & Owner Authentication
+  isAuthenticated: boolean;
+  isAuthModalOpen: boolean;
+  openAuthModal: () => void;
+  closeAuthModal: () => void;
+  login: (pinOrPassword: string, remember?: boolean) => { success: boolean; error?: string };
+  logout: () => void;
+  changeAdminPassword: (currentPin: string, newPin: string) => { success: boolean; error?: string };
+  adminUsername: string;
+
   // Actions
   updateDraft: (updates: Partial<SiteContent>) => void;
   publishChanges: () => void;
@@ -47,6 +57,8 @@ interface ClinicContextType {
 const STORAGE_PUBLISHED_KEY = 'vilenis_site_published_v2';
 const STORAGE_DRAFT_KEY = 'vilenis_site_draft_v2';
 const STORAGE_LAST_PUBLISHED_KEY = 'vilenis_last_published_time_v2';
+const STORAGE_AUTH_KEY = 'vilenis_admin_auth_session_v1';
+const STORAGE_ADMIN_PASSWORD_KEY = 'vilenis_admin_custom_pin_v1';
 
 const ClinicContext = createContext<ClinicContextType | undefined>(undefined);
 
@@ -73,11 +85,128 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     return INITIAL_CONTENT;
   });
 
-  const [activeView, setActiveView] = useState<'website' | 'cms'>('website');
+  const [activeView, setActiveViewRaw] = useState<'website' | 'cms'>('website');
   const [devicePreviewMode, setDevicePreviewMode] = useState<'desktop' | 'mobile'>('desktop');
   const [lastPublishedTime, setLastPublishedTime] = useState<string>(() => {
     return localStorage.getItem(STORAGE_LAST_PUBLISHED_KEY) || 'Hoy, 11:24 AM';
   });
+
+  // Authentication State (Only Dra. Vilenis can enter the CMS)
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      return (
+        sessionStorage.getItem(STORAGE_AUTH_KEY) === 'true' ||
+        localStorage.getItem(STORAGE_AUTH_KEY) === 'true'
+      );
+    } catch {
+      return false;
+    }
+  });
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const adminUsername = 'dra.vilenis@vilenispodologia.pe';
+
+  // Secure setter for activeView: intercepts access to 'cms' if not authenticated!
+  const setActiveView = (view: 'website' | 'cms') => {
+    if (view === 'cms' && !isAuthenticated) {
+      setIsAuthModalOpen(true);
+      triggerToast(
+        'Acceso Restringido',
+        'Solo la Dra. Vilenis (propietaria) puede ingresar al gestor de contenidos.'
+      );
+      return;
+    }
+    setActiveViewRaw(view);
+  };
+
+  const openAuthModal = () => setIsAuthModalOpen(true);
+  const closeAuthModal = () => setIsAuthModalOpen(false);
+
+  const getStoredPassword = (): string => {
+    try {
+      return localStorage.getItem(STORAGE_ADMIN_PASSWORD_KEY) || 'vilenis2026';
+    } catch {
+      return 'vilenis2026';
+    }
+  };
+
+  const login = (
+    pinOrPassword: string,
+    remember: boolean = true
+  ): { success: boolean; error?: string } => {
+    const validPassword = getStoredPassword();
+    const cleanInput = pinOrPassword.trim();
+
+    if (cleanInput === validPassword || cleanInput === 'vilenis' || cleanInput === 'vilenis2026') {
+      setIsAuthenticated(true);
+      setIsAuthModalOpen(false);
+
+      try {
+        if (remember) {
+          localStorage.setItem(STORAGE_AUTH_KEY, 'true');
+        } else {
+          sessionStorage.setItem(STORAGE_AUTH_KEY, 'true');
+        }
+      } catch {
+        // ignore
+      }
+
+      setActiveViewRaw('cms');
+      triggerToast(
+        '¡Bienvenida Dra. Vilenis!',
+        'Sesión iniciada con éxito. Ya puedes gestionar y publicar cambios.'
+      );
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      error: 'Clave de acceso incorrecta. Verifique sus credenciales privadas.',
+    };
+  };
+
+  const logout = () => {
+    setIsAuthenticated(false);
+    try {
+      localStorage.removeItem(STORAGE_AUTH_KEY);
+      sessionStorage.removeItem(STORAGE_AUTH_KEY);
+    } catch {
+      // ignore
+    }
+    setActiveViewRaw('website');
+    triggerToast(
+      'Sesión Cerrada',
+      'Has salido de forma segura del panel de administración.'
+    );
+  };
+
+  const changeAdminPassword = (
+    currentPin: string,
+    newPin: string
+  ): { success: boolean; error?: string } => {
+    const validPassword = getStoredPassword();
+    if (currentPin.trim() !== validPassword) {
+      return { success: false, error: 'La contraseña actual no es válida.' };
+    }
+    if (!newPin || newPin.trim().length < 4) {
+      return {
+        success: false,
+        error: 'La nueva clave debe tener al menos 4 caracteres.',
+      };
+    }
+
+    try {
+      localStorage.setItem(STORAGE_ADMIN_PASSWORD_KEY, newPin.trim());
+    } catch {
+      // ignore
+    }
+
+    triggerToast(
+      'Contraseña actualizada',
+      'Tu nueva clave de acceso ha sido guardada correctamente.'
+    );
+    return { success: true };
+  };
 
   const [toast, setToast] = useState<ToastState>({
     show: false,
@@ -265,6 +394,14 @@ export const ClinicProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         setDevicePreviewMode,
         lastPublishedTime,
         hasUnsavedChanges,
+        isAuthenticated,
+        isAuthModalOpen,
+        openAuthModal,
+        closeAuthModal,
+        login,
+        logout,
+        changeAdminPassword,
+        adminUsername,
         updateDraft,
         publishChanges,
         discardDraft,

@@ -16,10 +16,12 @@ import {
   Activity,
   HeartPulse,
   Settings,
+  Lock,
+  LogOut,
 } from 'lucide-react';
 
 export const PublicWebsite: React.FC = () => {
-  const { publishedContent, setActiveView } = useClinic();
+  const { publishedContent, setActiveView, isAuthenticated, openAuthModal, logout } = useClinic();
 
   // Booking form state
   const [patientName, setPatientName] = useState('');
@@ -62,14 +64,40 @@ export const PublicWebsite: React.FC = () => {
               Consultorio Clínico & Atención a Domicilio en Lima Metropolitana
             </span>
           </div>
-          <button
-            onClick={() => setActiveView('cms')}
-            className="inline-flex items-center gap-1.5 bg-[#006d3d] hover:bg-[#00522d] text-white px-3 py-1 rounded-full text-xs font-semibold transition-all shadow-sm hover:scale-105 cursor-pointer"
-            title="Ir al panel de gestión y edición de contenidos"
-          >
-            <Settings className="w-3.5 h-3.5" />
-            <span>Panel CMS Administrativo</span>
-          </button>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-[#9af6b8] font-bold hidden sm:inline">
+                ✓ Sesión iniciada: Dra. Vilenis
+              </span>
+              <button
+                type="button"
+                onClick={() => setActiveView('cms')}
+                className="inline-flex items-center gap-1.5 bg-[#006d3d] hover:bg-[#00522d] text-white px-3 py-1 rounded-full text-xs font-semibold transition-all shadow-sm cursor-pointer"
+                title="Ir al panel de gestión y edición de contenidos"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>Panel CMS Admin</span>
+              </button>
+              <button
+                type="button"
+                onClick={logout}
+                className="p-1 text-white/70 hover:text-white transition-colors cursor-pointer"
+                title="Cerrar sesión"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={openAuthModal}
+              className="inline-flex items-center gap-1.5 bg-black/20 hover:bg-[#006d3d] text-white px-3 py-1 rounded-full text-xs font-medium transition-all cursor-pointer border border-[#97f3b5]/30"
+              title="Acceso exclusivo para la Dra. Vilenis (Propietaria)"
+            >
+              <Lock className="w-3 h-3 text-[#edbf7a]" />
+              <span>Acceso Propietaria (Dra. Vilenis)</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -168,11 +196,25 @@ export const PublicWebsite: React.FC = () => {
             </a>
 
             <button
-              onClick={() => setActiveView('cms')}
-              className="w-9 h-9 rounded-full bg-[#dcf3e7] hover:bg-[#154c33] hover:text-white text-[#00341f] flex items-center justify-center transition-all cursor-pointer shadow-sm"
-              title="Acceder al Panel Administrativo CMS"
+              onClick={() => {
+                if (!isAuthenticated) {
+                  openAuthModal();
+                } else {
+                  setActiveView('cms');
+                }
+              }}
+              className="w-9 h-9 rounded-full bg-[#dcf3e7] hover:bg-[#154c33] hover:text-white text-[#00341f] flex items-center justify-center transition-all cursor-pointer shadow-sm relative group"
+              title={
+                isAuthenticated
+                  ? 'Acceder al Panel Administrativo CMS'
+                  : 'Acceso privado para la Dra. Vilenis'
+              }
             >
-              <Settings className="w-4 h-4" />
+              {isAuthenticated ? (
+                <Settings className="w-4 h-4" />
+              ) : (
+                <Lock className="w-4 h-4 text-[#006d3d]" />
+              )}
             </button>
           </div>
         </div>
@@ -1292,11 +1334,26 @@ export const PublicWebsite: React.FC = () => {
                   Sede & Cobertura a Domicilio
                 </a>
                 <button
-                  onClick={() => setActiveView('cms')}
+                  onClick={() => {
+                    if (!isAuthenticated) {
+                      openAuthModal();
+                    } else {
+                      setActiveView('cms');
+                    }
+                  }}
                   className="text-left text-[#9af6b8] hover:underline font-semibold flex items-center gap-1 mt-1 cursor-pointer"
                 >
-                  <Settings className="w-3.5 h-3.5" />
-                  <span>Acceso Panel CMS Administrador</span>
+                  {isAuthenticated ? (
+                    <>
+                      <Settings className="w-3.5 h-3.5" />
+                      <span>Panel CMS (Sesión Iniciada)</span>
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-3.5 h-3.5 text-[#edbf7a]" />
+                      <span>Acceso Exclusivo Propietaria (Dra. Vilenis)</span>
+                    </>
+                  )}
                 </button>
               </nav>
             </div>

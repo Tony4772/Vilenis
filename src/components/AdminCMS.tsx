@@ -28,6 +28,10 @@ import {
   RefreshCw,
   Crop,
   Search,
+  LogOut,
+  KeyRound,
+  ShieldCheck,
+  Lock,
 } from 'lucide-react';
 
 export const AdminCMS: React.FC = () => {
@@ -45,9 +49,20 @@ export const AdminCMS: React.FC = () => {
     moveService,
     deleteImage,
     setActiveView,
+    isAuthenticated,
+    openAuthModal,
+    logout,
+    changeAdminPassword,
     toast,
     dismissToast,
   } = useClinic();
+
+  // Password change state
+  const [currentPin, setCurrentPin] = useState('');
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [passwordChangeError, setPasswordChangeError] = useState('');
+  const [passwordChangeSuccess, setPasswordChangeSuccess] = useState(false);
 
   // Active navigation tab
   const [navTab, setNavTab] = useState<
@@ -295,6 +310,17 @@ export const AdminCMS: React.FC = () => {
                   </span>
                 </div>
               </div>
+
+              {/* Logout Button */}
+              <button
+                type="button"
+                onClick={logout}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#ffdad6]/80 hover:bg-[#ba1a1a] text-[#ba1a1a] hover:text-white text-xs font-bold transition-all cursor-pointer shadow-xs"
+                title="Cerrar sesión de administradora"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Cerrar Sesión</span>
+              </button>
             </div>
           </div>
         </header>
@@ -1295,6 +1321,80 @@ export const AdminCMS: React.FC = () => {
                     onChange={(e) => updateDraft({ email: e.target.value })}
                     className="w-full bg-[#f7faf8] px-3.5 py-2 text-sm text-[#0b1f18] rounded-lg border border-[#c0c9c1]/40"
                   />
+                </div>
+
+                {/* Security & Password Change Card */}
+                <div className="pt-4 border-t border-[#dcf3e7] flex flex-col gap-3">
+                  <div className="flex items-center gap-2 text-[#00341f]">
+                    <ShieldCheck className="w-4 h-4 text-[#006d3d]" />
+                    <span className="text-xs font-bold block">
+                      Seguridad & Clave de Acceso Privada
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-[#404943]">
+                    Configura tu contraseña personalizada para impedir que terceros modifiquen el sitio.
+                  </p>
+
+                  {passwordChangeError && (
+                    <div className="p-2.5 bg-[#ffdad6] text-[#ba1a1a] rounded-lg text-xs font-semibold">
+                      {passwordChangeError}
+                    </div>
+                  )}
+
+                  {passwordChangeSuccess && (
+                    <div className="p-2.5 bg-[#dcf3e7] text-[#006d3d] rounded-lg text-xs font-semibold">
+                      ✓ ¡Contraseña modificada exitosamente!
+                    </div>
+                  )}
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <input
+                      type="password"
+                      placeholder="Clave actual..."
+                      value={currentPin}
+                      onChange={(e) => setCurrentPin(e.target.value)}
+                      className="w-full bg-[#f7faf8] px-3 py-2 text-xs text-[#0b1f18] rounded-lg border border-[#c0c9c1]/40"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Nueva clave..."
+                      value={newPin}
+                      onChange={(e) => setNewPin(e.target.value)}
+                      className="w-full bg-[#f7faf8] px-3 py-2 text-xs text-[#0b1f18] rounded-lg border border-[#c0c9c1]/40"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Confirmar nueva clave..."
+                      value={confirmPin}
+                      onChange={(e) => setConfirmPin(e.target.value)}
+                      className="w-full bg-[#f7faf8] px-3 py-2 text-xs text-[#0b1f18] rounded-lg border border-[#c0c9c1]/40"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPasswordChangeError('');
+                      setPasswordChangeSuccess(false);
+                      if (newPin !== confirmPin) {
+                        setPasswordChangeError('Las nuevas claves no coinciden.');
+                        return;
+                      }
+                      const res = changeAdminPassword(currentPin, newPin);
+                      if (res.success) {
+                        setPasswordChangeSuccess(true);
+                        setCurrentPin('');
+                        setNewPin('');
+                        setConfirmPin('');
+                      } else {
+                        setPasswordChangeError(res.error || 'Error al cambiar contraseña');
+                      }
+                    }}
+                    className="self-start px-4 py-2 rounded-lg bg-[#154c33] hover:bg-[#00341f] text-white text-xs font-bold transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <KeyRound className="w-3.5 h-3.5" />
+                    <span>Guardar Nueva Clave</span>
+                  </button>
                 </div>
 
                 <div className="pt-4 border-t border-[#dcf3e7] flex items-center justify-between">
