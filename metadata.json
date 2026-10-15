@@ -1,0 +1,6 @@
+{
+  "name": "Vilenis Podología Clínica - Lima",
+  "description": "Sitio web oficial y panel CMS para Vilenis Podología Clínica en Lima, Perú. Especialistas en quiropodia avanzada, uña encarnada, biomecánica y bioseguridad hospitalaria.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
